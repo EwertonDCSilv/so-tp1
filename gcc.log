@@ -1,4 +1,0 @@
-sh.c:9:22: fatal error: sys/wait.h: No such file or directory
- #include <sys/wait.h>
-                      ^
-compilation terminated.

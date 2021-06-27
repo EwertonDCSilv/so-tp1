@@ -25,3 +25,15 @@ Adicione aqui as referências bibliográficas.
 
 Descreva e justifique as estruturas de dados e algoritmos utilizados
 em sua solução.
+
+
+
+execvp
+open
+dup
+close
+pipe
+fork
+
+https://linux.die.net/man/2/close#:~:text=close()%20closes%20a%20file,used%20to%20obtain%20the%20lock).
+https://www.section.io/engineering-education/fork-in-c-programming-language/

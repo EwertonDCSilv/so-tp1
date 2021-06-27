@@ -8,9 +8,8 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 
-/* MARK NAME Seu Nome Aqui */
-/* MARK NAME Nome de Outro Integrante Aqui */
-/* MARK NAME E Etc */
+/* MARK NAME Ewerton Silva Santos */
+/* MARK NAME Rafael Nascimento */
 
 /****************************************************************
  * Shell xv6 simplificado
@@ -24,21 +23,18 @@
 /* Todos comandos tem um tipo.    Depois de olhar para o tipo do
  * comando, o código converte um *cmd para o tipo específico de
  * comando. */
-struct cmd
-{
+struct cmd{
     int type; /* ' ' (exec)
                 '|' (pipe)
                 '<' or '>' (redirection) */
 };
 
-struct execcmd
-{
+struct execcmd{
     int type;            // ' '
-    char *argv[MAXARGS]; // argumentos do comando a ser exec'utado
+    char *argv[MAXARGS]; // argumentos do comando a ser executado
 };
 
-struct redircmd
-{
+struct redircmd{
     int type;        // < ou >
     struct cmd *cmd; // o comando a rodar (ex.: um execcmd)
     char *file;      // o arquivo de entrada ou saída
@@ -46,8 +42,7 @@ struct redircmd
     int fd;          // o número de descritor de arquivo que deve ser usado
 };
 
-struct pipecmd
-{
+struct pipecmd{
     int type;          // |
     struct cmd *left;  // lado esquerdo do pipe
     struct cmd *right; // lado direito do pipe
@@ -56,73 +51,150 @@ struct pipecmd
 int fork1(void);              // Fork mas fechar se ocorrer erro.
 struct cmd *parsecmd(char *); // Processar o linha de comando.
 
+/*
+    Funcao para auxiliar na copia e no fechamento de descritores 
+*/
+void copyClose(int in, int out){
+    // Criando cópia para descritor de arquivo
+    dup(in);
+
+    // Fechando descritor de saida
+    close(out);
+    
+    // Fechando arquivo de entrada
+    close(in);
+}
+
 /* Executar comando cmd.    Nunca retorna. */
 void runcmd(struct cmd *cmd)
-{
-    int p[2], r;
-    int fd_in, fd_out; // declarando o file descriptor para a utilização em comandos que tratam de arquivos
+{   
+    // Change init
+    int p[2];          // Lista de arquivos de entrada e saida
+    int descriptor[2]; // Lista de arquivos descritores para cada pip
+    int child;         // Identificador do processo filho
+    //int p[2], r;
+    // Change end
     struct execcmd *ecmd;
     struct pipecmd *pcmd;
     struct redircmd *rcmd;
 
+    // Caso o camando seja invalido
     if (cmd == 0)
         exit(0);
 
     switch (cmd->type){
-    default:
-        fprintf(stderr, "Tipo de comando desconhecido\n");
-        exit(-1);
+        default:
+            fprintf(stderr, "Tipo de comando desconhecido\n");
+            exit(-1);
 
-    case ' ':
-        ecmd = (struct execcmd *)cmd;
+        case ' ':
+            ecmd = (struct execcmd *)cmd;
 
-        // Comando invalido
-        if (ecmd->argv[0] == 0)
-            exit(0);
+            // Comando invalido
+            if (ecmd->argv[0] == 0)
+                exit(0);
 
-        char *file = ecmd->argv[0];
-        execvp(file, ecmd->argv);
+            /* MARK START task2
+            * TAREFA2: Implemente codigo abaixo para executar
+            * comandos simples. */
 
-        break;
+            // Obtendo nome do processo  
+            char *file = ecmd->argv[0];
+            
+            // Executando processo filho, passando comando e argumentos
+            execvp(file, ecmd->argv); 
 
-    case '>':
-        rcmd = (struct redircmd *)cmd;
-        fd_out = open(rcmd->file, rcmd->mode, 0777);
-        close(STDOUT_FILENO);
-        dup(fd_out);
-        close(fd_out);
-        runcmd(rcmd->cmd);
+            /* MARK END task2 */
+            break;
 
-    case '<':
-        rcmd = (struct redircmd *)cmd;
-        /* MARK START task3
-        * TAREFA3: Implemente codigo abaixo para executar
-        * comando com redirecionamento. 
-        */
-        fd_in = open(rcmd->file, rcmd->mode, 0777); // 0777 para dar permissao de leitura escrita do arquivo -> evitar "bad file descriptor"
-        close(STDIN_FILENO);                        // fechando o stdin para utilização do file descriptor
-        dup(fd_in);                                 // criando uma copia do file descriptor criado utilizando o FD com menor numero disponivel
-        close(fd_in);
-        /* MARK END task3 */
-        runcmd(rcmd->cmd);
-        break;
+        case '>':
+            // Executando comando de redirecionamento de saida
+            rcmd = (struct redircmd *)cmd;
+            
+            // Abrindo e dando permissao de escrita ao arquivo de saida
+            p[1] = open(rcmd->file, rcmd->mode, 0777);
+            
+            // Fechando arquivo de saida 
+            close(STDOUT_FILENO);
 
-    case '|':
-        pcmd = (struct pipecmd *)cmd;
-        /* MARK START task4
+            // Criando cópia para descritor de arquivo
+            dup(p[1]);
+
+            // Fechando arquivos 
+            close(p[1]);
+
+            runcmd(rcmd->cmd);
+            break;
+
+        case '<':
+            // Executando comando de redirecionamento de entrada
+            rcmd = (struct redircmd *)cmd;
+            /* MARK START task3
+            * TAREFA3: Implemente codigo abaixo para executar
+            * comando com redirecionamento. 
+            */
+
+            // Abrindo e dando permissao de escrita ao arquivo de saida
+            p[0] = open(rcmd->file, rcmd->mode, 0777);  
+            
+            // Fechando arquivo de entrada 
+            close(STDIN_FILENO);                        
+
+            // Criando cópia para descritor de arquivo
+            dup(p[0]);                                  
+
+            // Fechando arquivos 
+            close(p[0]);
+
+            /* MARK END task3 */
+
+            runcmd(rcmd->cmd);
+            break;
+
+        case '|':
+            pcmd = (struct pipecmd*)cmd;
+            /* MARK START task4
             * TAREFA4: Implemente codigo abaixo para executar
             * comando com pipes. */
-        fprintf(stderr, "pipe nao implementado\n");
-        /* MARK END task4 */
-        break;
+            
+            pipe(descriptor); // Criando conexao entre processos
+            child = fork();   // Criando processo filho
+
+            // Verificando se processo e invalido
+            if(child < 0)   
+                break;
+          
+            switch (child){ 
+                case 0: // Processo filho recem criando 
+                    // Fechando arquivo de saida
+                    close(STDOUT_FILENO);
+
+                    // Fechando e copiando descritores
+                    copyClose(descriptor[1], descriptor[0]);
+
+                    // Executando comando 
+                    runcmd(pcmd->left);
+
+                default: // Processo pai
+                    // Fechando arquivo de entrada
+                    close(STDIN_FILENO);
+
+                    // Fechando e copiando descritores
+                    copyClose(descriptor[0], descriptor[1]);
+                    
+                    // Executando comando 
+                    runcmd(pcmd->right);
+            }
+            /* MARK END task4 */
+            break;
     }
     exit(0);
 }
 
-int getcmd(char *buf, int nbuf)
-{
+int getcmd(char *buf, int nbuf){
     if (isatty(fileno(stdin)))
         fprintf(stdout, "$ ");
+    
     memset(buf, 0, nbuf);
     fgets(buf, nbuf, stdin);
     if (buf[0] == 0) // EOF
@@ -130,36 +202,33 @@ int getcmd(char *buf, int nbuf)
     return 0;
 }
 
-int main(void)
-{
+int main(void){
     static char buf[100];
     int r;
 
     // Ler e rodar comandos.
-    while (getcmd(buf, sizeof(buf)) >= 0)
-    {
+    while (getcmd(buf, sizeof(buf)) >= 0){
         /* MARK START task1 */
         /* TAREFA1: O que faz o if abaixo e por que ele é necessário?
          * Insira sua resposta no código e modifique o fprintf abaixo
          * para reportar o erro corretamente. */
-        if (buf[0] == 'c' && buf[1] == 'd' && buf[2] == ' ')
-        {
+        if (buf[0] == 'c' && buf[1] == 'd' && buf[2] == ' '){
             buf[strlen(buf) - 1] = 0;
-            if (chdir(buf + 3) < 0)
-                fprintf(stderr, "reporte erro\n");
+            if (chdir(buf + 3) < 0) // Verificando o caminho do argumento e valido
+                fprintf(stderr, "Caminho invalido. Verifique o caminho e tente novamente\n");
             continue;
         }
-        /* MARK END task1 */
 
+        /* MARK END task1 */
         if (fork1() == 0)
             runcmd(parsecmd(buf));
+
         wait(&r);
     }
     exit(0);
 }
 
-int fork1(void)
-{
+int fork1(void){
     int pid;
 
     pid = fork();
@@ -172,8 +241,7 @@ int fork1(void)
  * Funcoes auxiliares para criar estruturas de comando
  ***************************************************************/
 
-struct cmd *execcmd(void)
-{
+struct cmd *execcmd(void){
     struct execcmd *cmd;
 
     cmd = malloc(sizeof(*cmd));
@@ -182,8 +250,7 @@ struct cmd *execcmd(void)
     return (struct cmd *)cmd;
 }
 
-struct cmd *redircmd(struct cmd *subcmd, char *file, int type)
-{
+struct cmd *redircmd(struct cmd *subcmd, char *file, int type){
     struct redircmd *cmd;
 
     cmd = malloc(sizeof(*cmd));
@@ -196,8 +263,7 @@ struct cmd *redircmd(struct cmd *subcmd, char *file, int type)
     return (struct cmd *)cmd;
 }
 
-struct cmd *pipecmd(struct cmd *left, struct cmd *right)
-{
+struct cmd *pipecmd(struct cmd *left, struct cmd *right) {
     struct pipecmd *cmd;
 
     cmd = malloc(sizeof(*cmd));
@@ -215,8 +281,7 @@ struct cmd *pipecmd(struct cmd *left, struct cmd *right)
 char whitespace[] = " \t\r\n\v";
 char symbols[] = "<|>";
 
-int gettoken(char **ps, char *es, char **q, char **eq)
-{
+int gettoken(char **ps, char *es, char **q, char **eq){
     char *s;
     int ret;
 
@@ -226,23 +291,23 @@ int gettoken(char **ps, char *es, char **q, char **eq)
     if (q)
         *q = s;
     ret = *s;
-    switch (*s)
-    {
-    case 0:
-        break;
-    case '|':
-    case '<':
-        s++;
-        break;
-    case '>':
-        s++;
-        break;
-    default:
-        ret = 'a';
-        while (s < es && !strchr(whitespace, *s) && !strchr(symbols, *s))
+    switch (*s){
+        case 0:
+            break;
+        case '|':
+        case '<':
             s++;
-        break;
+            break;
+        case '>':
+            s++;
+            break;
+        default:
+            ret = 'a';
+            while (s < es && !strchr(whitespace, *s) && !strchr(symbols, *s))
+                s++;
+            break;
     }
+
     if (eq)
         *eq = s;
 
@@ -252,13 +317,13 @@ int gettoken(char **ps, char *es, char **q, char **eq)
     return ret;
 }
 
-int peek(char **ps, char *es, char *toks)
-{
+int peek(char **ps, char *es, char *toks){
     char *s;
 
     s = *ps;
     while (s < es && strchr(whitespace, *s))
         s++;
+
     *ps = s;
     return *s && strchr(toks, *s);
 }
@@ -269,8 +334,7 @@ struct cmd *parseexec(char **, char *);
 
 /* Copiar os caracteres no buffer de entrada, comeando de s ate es.
  * Colocar terminador zero no final para obter um string valido. */
-char *mkcopy(char *s, char *es)
-{
+char *mkcopy(char *s, char *es){
     int n = es - s;
     char *c = malloc(n + 1);
     assert(c);
@@ -279,8 +343,7 @@ char *mkcopy(char *s, char *es)
     return c;
 }
 
-struct cmd *parsecmd(char *s)
-{
+struct cmd *parsecmd(char *s){
     char *es;
     struct cmd *cmd;
 
@@ -295,15 +358,13 @@ struct cmd *parsecmd(char *s)
     return cmd;
 }
 
-struct cmd *parseline(char **ps, char *es)
-{
+struct cmd *parseline(char **ps, char *es){
     struct cmd *cmd;
     cmd = parsepipe(ps, es);
     return cmd;
 }
 
-struct cmd *parsepipe(char **ps, char *es)
-{
+struct cmd *parsepipe(char **ps, char *es){
     struct cmd *cmd;
 
     cmd = parseexec(ps, es);
@@ -315,34 +376,29 @@ struct cmd *parsepipe(char **ps, char *es)
     return cmd;
 }
 
-struct cmd *parseredirs(struct cmd *cmd, char **ps, char *es)
-{
+struct cmd *parseredirs(struct cmd *cmd, char **ps, char *es){
     int tok;
     char *q, *eq;
 
-    while (peek(ps, es, "<>"))
-    {
+    while (peek(ps, es, "<>")){
         tok = gettoken(ps, es, 0, 0);
-        if (gettoken(ps, es, &q, &eq) != 'a')
-        {
+        if (gettoken(ps, es, &q, &eq) != 'a'){
             fprintf(stderr, "missing file for redirection\n");
             exit(-1);
         }
-        switch (tok)
-        {
-        case '<':
-            cmd = redircmd(cmd, mkcopy(q, eq), '<');
-            break;
-        case '>':
-            cmd = redircmd(cmd, mkcopy(q, eq), '>');
-            break;
+        switch (tok){
+            case '<':
+                cmd = redircmd(cmd, mkcopy(q, eq), '<');
+                break;
+            case '>':
+                cmd = redircmd(cmd, mkcopy(q, eq), '>');
+                break;
         }
     }
     return cmd;
 }
 
-struct cmd *parseexec(char **ps, char *es)
-{
+struct cmd *parseexec(char **ps, char *es){
     char *q, *eq;
     int tok, argc;
     struct execcmd *cmd;
@@ -353,19 +409,18 @@ struct cmd *parseexec(char **ps, char *es)
 
     argc = 0;
     ret = parseredirs(ret, ps, es);
-    while (!peek(ps, es, "|"))
-    {
+
+    while (!peek(ps, es, "|")){
         if ((tok = gettoken(ps, es, &q, &eq)) == 0)
             break;
-        if (tok != 'a')
-        {
+        if (tok != 'a'){
             fprintf(stderr, "syntax error\n");
             exit(-1);
         }
         cmd->argv[argc] = mkcopy(q, eq);
         argc++;
-        if (argc >= MAXARGS)
-        {
+
+        if (argc >= MAXARGS){
             fprintf(stderr, "too many args\n");
             exit(-1);
         }
