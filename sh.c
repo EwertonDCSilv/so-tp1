@@ -9,7 +9,7 @@
 #include <sys/wait.h>
 
 /* MARK NAME Ewerton Silva Santos */
-/* MARK NAME Rafael Nascimento */
+/* MARK NAME Rafael Oliveira Prado Nascimento */
 
 /****************************************************************
  * Shell xv6 simplificado
