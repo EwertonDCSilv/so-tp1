@@ -9,7 +9,7 @@
 #include <sys/wait.h>
 
 /* MARK NAME Ewerton Silva Santos */
-/* MARK NAME Rafael Nascimento */
+/* MARK NAME Rafael Oliveira Prado Nascimento */
 
 /****************************************************************
  * Shell xv6 simplificado
@@ -98,7 +98,7 @@ void runcmd(struct cmd *cmd)
             * TAREFA2: Implemente codigo abaixo para executar
             * comandos simples. */
 
-            // Obtendo nome do processo  
+            // Obtendo nome do programa a ser executado  
             char *file = ecmd->argv[0];
             
             // Executando processo filho, passando comando e argumentos
