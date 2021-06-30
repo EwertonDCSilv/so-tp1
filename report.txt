@@ -13,8 +13,11 @@ Preencha as linhas abaixo com o nome e o e-mail dos integrantes do
 grupo.  Substitua XX pela contribuição de cada membro do grupo no
 desenvolvimento do trabalho.
 
-Ewerton Silva Santos <ewerton_dc@hotmail.com> 50%
-Rafael Oliveira Prado Nascimento <rafaelnascimento@dcc.ufmg.br> 50%
+Ewerton Silva Santos <ewerton_dc@hotmail.com>. 
+Realizou a tarefa de buscar pelas referencias no livros, estudando o funcionamento de cada uma das system calls e funções utilizadas(execvp, dup, fork, open, close, pipe) , revisando também o material da disciplina relacionados a pipe lines. Implementou o case de redirecionamento, a função copyClose para auxiliar na manipulação de descritor de arquivos e metade do case de pipe.
+
+Rafael Oliveira Prado Nascimento <rafaelnascimento@dcc.ufmg.br>.
+Realizou a tarefa de buscar pelas referencias no livros, estudando o funcionamento de cada uma das system calls e funções utilizadas(execvp, dup, fork, open, close, pipe) , revisando também o material da disciplina relacionados a pipe lines. Implementou o case de redirecionamento, o case para comandos simples e metade do case de pipe.
 
 
 3. Referências bibliográficas
